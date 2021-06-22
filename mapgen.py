@@ -115,5 +115,5 @@ while True:
         for i in range(len(l2[j])):
             if l2[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
             else: im2.putpixel((i,j),(255,255,255,0))
-    im2.save("imgs/" + "".join([random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") for z in range(10)]) + ".png")
+    im2.save("imgs2/" + "".join([random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") for z in range(10)]) + ".png")
 

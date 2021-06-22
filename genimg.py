@@ -2,10 +2,10 @@ from PIL import Image
 
 center = Image.open("background.png")
 
-ringsFiles = ["ring3.png","ring2.png","ring1.png","center.png"]
-ringSpeeds = [4, 1, -2, 0] # num rotations per year
+ringsFiles = ["ring6.png","ring5.png","ring4.png","ring3.png","ring2.png","ring1.png","ring0.png"]
+ringSpeeds = [0.25, 1, -2, 1.5, 1, -2, 0] # num rotations per year
 
-dayOfYear = int(input("How many days have passed this year? "))
+dayOfYear = 360 * int(input("What year is it? ")) + 30* (int(input("What month is it? "))-1) + int(input("What day is it? "))
 
 for i in range(len(ringsFiles)):
   temp = Image.open(ringsFiles[i])
