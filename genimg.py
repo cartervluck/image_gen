@@ -9,7 +9,7 @@ dayOfYear = 360 * int(input("What year is it? ")) + 30* (int(input("What month i
 
 for i in range(len(ringsFiles)):
   temp = Image.open(ringsFiles[i])
-  temp = temp.rotate(angle=-ringSpeeds[i]*0.6*dayOfYear) # 600 days per year
+  temp = temp.rotate(angle=-ringSpeeds[i]*(dayOfYear-1296)) # 360 days per year
   center.paste(temp, (0,0), temp)
 
 center.save("out.png")
