@@ -12,3 +12,14 @@ Map drawing is a completely distinct algorithm from Island Generation, taking in
 
 ### How it works
 First we calculate how many days have passed since the "beginning of time," or the 0th day of the 1st month of the 0th year. Since each month is exactly 30 days and each year is exactly 12 months, we can calculate this with 360 * year + 30 * (month-1) + day. We want to 0-index the month so that year edges go from 360y + 30(11) + 30 to 360(y+1) + 0 + 1 (this is basically equivalent to going from 360y + 30(12) + 30 to 360(y+1) + 30(1) + 1, but year 0 is handled in a nicer way). We subtract a magic constant from the day to normalize it to what it should look like on 1-1-9999, and rotate each ring png by the rate at which they rotate times the day before pasting them onto the "background image."
+
+### Flags
+
+#### --timezones
+Overlay timezones over the map
+
+#### --clean
+Use cleaner, less intrusive overlay visuals
+
+#### --sun
+Overlay sun's path over the map
