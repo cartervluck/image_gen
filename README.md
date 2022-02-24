@@ -7,6 +7,20 @@ To generate islands, run mapgen.py. It will create island pngs in ./imgs2. This 
 ### How it works
 The algorithm can be broken up into two distinct problems, and the first problem can be broken up into three steps. For the first problem, we want to generate a low-resolution version of the map. The first step for doing so is drawing a random rectangle. Then, it removes circular chunks from the rectangle randomly. Finally, it applies a "growth formula" to the shape, randomly smoothing and growing the edges. The second problem is scaling, or turning the low res images into high res ones. The algorithm I used was a repeated bicubic interpolation (which turned out to be very slow, but functional). This works by doubling both dimensions of the matrix used to store the image, and calculating how many of the pixels in the 5x5 matrix centered on any given pixel belonged to a filled pixel in the old matrix. The threshold I set was 7, so the island grew a little and curved naturally as it interpolated. I repeated this interpolation five times.
 
+### Flags
+
+#### --intermediate
+Saves pre-interpolation maps to img0.png, img1.png, etc.
+
+#### --benchmark
+Logs how long it took to complete each interpolation
+
+#### --logs
+Prints miscellaneous logs
+
+#### --parallel
+Runs interpolation in parallel with CUDA on compatible graphics cards. Must have CUDA installed.
+
 ## Map Drawing
 Map drawing is a completely distinct algorithm from Island Generation, taking in a date in the fictional universe of my dnd world and changing the map to fit the given date. This is necessary because the fantasy world has rapid tectonic motion; namely, the tectonic plates are giant concentric rings that rotate relative to one another up to four times per year. Each tectonic ring is stored in its own png file.
 
