@@ -34,7 +34,7 @@ while DOTHING:
                     if (i + k >= 0) and (j + l >= 0) and (i + k) < rowSize and int((j + l)*rowSize/4) + int((i + k)/2) < max:
                         if a[int((j + l)*rowSize/4) + int((i + k)/2)] == 1:
                             count += 1
-            if count >= 7:
+            if count >= 7 or a[int((j)*rowSize/4) + int((i)/2)] == 1:
                 out[z] = 1
             else: out[z] = 2
 
