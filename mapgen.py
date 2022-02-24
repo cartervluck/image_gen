@@ -4,26 +4,13 @@ import time
 import math
 from PIL import Image
 import sys
+import numpy as np
 
 args = []
 
 for i, arg in enumerate(sys.argv):
     args.append(arg)
-try:
-    from numba import jit
-    @jit
-    def interpolatePixel(i,j,d,arr):
-        corr_x = math.floor(j/2)
-        corr_y = math.floor(i/2)
-        count = 0
-        for k in d:
-            if len(arr) > math.floor((i + k[1])/2) and len(arr[math.floor((i + k[1])/2)]) > math.floor((j + k[0])/2):
-                if arr[math.floor((i + k[1])/2)][math.floor((j + k[0])/2)] == 1:
-                    count += 1
-        if count >= 7: return 1
-        else: return 2
-except ModuleNotFoundError:
-    pass
+
 
 DOTHING = True
 
@@ -33,6 +20,23 @@ directions += [(0,2),(1,2),(2,2),(2,1),(2,0),(2,-1),(2,-2),(1,-2),(0,-2),(-1,-2)
 while DOTHING:
     x_size = int(input("X Dimension (default 100): "))
     y_size = int(input("Y Dimension (default 100): "))
+
+    if "--parallel" in args:
+        from numba import cuda
+        @cuda.jit
+        def interpolatePixel(out,a,rowSize,max):
+            z = cuda.grid(1)
+            i = z % rowSize
+            j = int((z-i) / rowSize)
+            count = 0
+            for k in range(-2,3):
+                for l in range(-2,3):
+                    if (i + k >= 0) and (j + l >= 0) and (i + k) < rowSize and int((j + l)*rowSize/4) + int((i + k)/2) < max:
+                        if a[int((j + l)*rowSize/4) + int((i + k)/2)] == 1:
+                            count += 1
+            if count >= 7:
+                out[z] = 1
+            else: out[z] = 2
 
     def checkzeros(a):
         for j in a:
@@ -88,17 +92,25 @@ while DOTHING:
             currentdir += 1
             currentdir = currentdir % 4
         lookat = (min(max(0,lookat[0] + vectors[currentdir][0]), x_size-1), min(max(0,lookat[1] + vectors[currentdir][1]),y_size-1))
+    im2 = Image.new("RGBA",(x_size,y_size))
+    for j in range(len(arr)):
+        for i in range(len(arr[j])):
+            if arr[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
+            else: im2.putpixel((i,j),(255,255,255,0))
+    im2.save(f"imgs3/img0.png")
 
     counter = 1
     while len(arr) <= 2**11:
         time_start = time.perf_counter()
-        l2 = [[0 for i in range(2 * x_size)] for j in range(2 * y_size)]
 
         if "--parallel" in args:
-            for i in range(2*y_size):
-                for j in range(2*x_size):
-                    l2[i][j] = interpolatePixel(i,j,directions,arr)
+            l2 = cuda.to_device(np.array([0 for i in range(4 * x_size * y_size)]))
+            a_1 = [arr[i][j] for i in range(y_size) for j in range(x_size)]
+            a_1d = cuda.to_device(np.array(a_1,order = 'C'))
+            interpolatePixel[len(l2),1](l2,a_1d,4*x_size,len(a_1d))
+            l2 = np.reshape(l2.copy_to_host(),(2*x_size,-1),'C')
         else:
+            l2 = [[0 for i in range(2 * x_size)] for j in range(2 * y_size)]
             for i in range(2*y_size):
                 for j in range(2*x_size):
                     corr_x = math.floor(j/2)
@@ -115,15 +127,15 @@ while DOTHING:
         y_size = 2 * y_size
         arr = l2
         
-        if "--benchmark" in args:
-            print(f"operation finished in {time.perf_counter() - time_start} seconds")
-        print(f"saving to imgs3/img{counter}.png")
+        if "--benchmark" in args: print(f"operation finished in {time.perf_counter() - time_start} seconds")
+        if "--logs" in args: print(f"saving to imgs3/img{counter}.png")
         im2 = Image.new("RGBA",(x_size,y_size))
         for j in range(len(l2)):
             for i in range(len(l2[j])):
                 if l2[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
                 else: im2.putpixel((i,j),(255,255,255,0))
         im2.save(f"imgs3/img{counter}.png")
+        if "--logs" in args: print(f"saved to imgs3/img{counter}.png with dimensions {len(l2)} by {len(l2[0])}")
         counter += 1
 
     im2 = Image.new("RGBA",(x_size,y_size))
