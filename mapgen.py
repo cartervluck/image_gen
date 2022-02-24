@@ -3,6 +3,14 @@ import random
 import time
 import math
 from PIL import Image
+import sys
+import numpy as np
+
+args = []
+
+for i, arg in enumerate(sys.argv):
+    args.append(arg)
+
 
 DOTHING = True
 
@@ -13,6 +21,23 @@ while DOTHING:
     x_size = int(input("X Dimension (default 100): "))
     y_size = int(input("Y Dimension (default 100): "))
 
+    if "--parallel" in args:
+        from numba import cuda
+        @cuda.jit
+        def interpolatePixel(out,a,rowSize,max):
+            z = cuda.grid(1)
+            i = z % rowSize
+            j = int((z-i) / rowSize)
+            count = 0
+            for k in range(-2,3):
+                for l in range(-2,3):
+                    if (i + k >= 0) and (j + l >= 0) and (i + k) < rowSize and int((j + l)*rowSize/4) + int((i + k)/2) < max:
+                        if a[int((j + l)*rowSize/4) + int((i + k)/2)] == 1:
+                            count += 1
+            if count >= 7:
+                out[z] = 1
+            else: out[z] = 2
+
     def checkzeros(a):
         for j in a:
             if 0 in j:
@@ -20,12 +45,9 @@ while DOTHING:
         return False
 
     def printmap(a,coord):
-        #for i in range(1000):
-        #    print("\n")
         for j in range(len(a)):
             k = ["X" if (i,j) == coord else "▓" if a[j][i] == 1 else " " for i in range(len(a[j]))]
             print(" ".join(k))
-            #print(" ".join([str(i) for i in a[j]]))
 
     arr = [[0 for i in range(x_size)] for j in range(y_size)] #index by y coord then x coord
 
@@ -43,24 +65,17 @@ while DOTHING:
         for i in range(x_randMin, x_randMax+1):
             arr[j][i] = 1
 
-    #printmap(arr,(0,0))
-
     for i in range(20):
         point = (random.randint(border, x_size-border-1),random.randint(border, y_size-border-1))
         for j in range(point[1]-int(border/3),point[1]+int(border/3)):
             for k in range(point[0]-int(border/3),point[0]+int(border/3)):
                 if (point[0]-k)**2 + (point[1]-j)**2 <= (border/3)**2 and arr[j][k] == 1:
                     arr[j][k] = 2
-        #printmap(arr,point)
-        #time.sleep(0.1)
 
     vectors = [(0,1),(1,0),(0,-1),(-1,0)]
     vectors2 = vectors + [(1,1),(1,-1),(-1,-1),(-1,1)]
     lookat = (x_randMin, y_randMin-1)
     currentdir = 1
-
-    #printmap(arr,lookat)
-    #time.sleep(1)
 
     while checkzeros(arr):
         if arr[lookat[1]][lookat[0]] == 0:
@@ -76,31 +91,31 @@ while DOTHING:
         if arr[lookat[1] + vectors[(currentdir + 1) % 4][1]][lookat[0] + vectors[(currentdir + 1) % 4][0]] == 0 or (currentdir == 0 and lookat[1] == y_size-1) or (currentdir == 1 and lookat[0] == x_size-1) or (currentdir == 2 and lookat[1] == 0) or (currentdir == 3 and lookat[0] == 0):
             currentdir += 1
             currentdir = currentdir % 4
-        #print("(",lookat[0],",",lookat[1],")")
-        #print("(",lookat[0] + vectors[currentdir][0],",",lookat[1] + vectors[currentdir][1],")")
         lookat = (min(max(0,lookat[0] + vectors[currentdir][0]), x_size-1), min(max(0,lookat[1] + vectors[currentdir][1]),y_size-1))
-        #printmap(arr,lookat)
-        #time.sleep(0.001)
-
-    #printmap(arr,(0,0))
-    '''im = Image.new("RGBA",(x_size,y_size))
-    for j in range(len(arr)):
-        for i in range(len(arr[j])):
-            if arr[j][i] == 1: im.putpixel((i,j),(0,0,0,255))
-            else: im.putpixel((i,j),(255,255,255,255))
-    im.save("poggers.png")'''
+    if "--intermediate" in args:
+        im2 = Image.new("RGBA",(x_size,y_size))
+        for j in range(len(arr)):
+            for i in range(len(arr[j])):
+                if arr[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
+                else: im2.putpixel((i,j),(255,255,255,0))
+        im2.save(f"imgs3/img0.png")
 
     counter = 1
     while len(arr) <= 2**11:
-        l2 = [[0 for i in range(2 * x_size)] for j in range(2 * y_size)]
+        time_start = time.perf_counter()
 
-        for i in range(2*y_size):
-            for j in range(2*x_size):
-                corr_x = math.floor(j/2)
-                corr_y = math.floor(i/2)
-                if arr[corr_y][corr_x] == 1:
-                    l2[i][j] = 1
-                else:
+        if "--parallel" in args:
+            l2 = cuda.to_device(np.array([0 for i in range(4 * x_size * y_size)]))
+            a_1 = [arr[i][j] for i in range(y_size) for j in range(x_size)]
+            a_1d = cuda.to_device(np.array(a_1,order = 'C'))
+            interpolatePixel[len(l2),1](l2,a_1d,4*x_size,len(a_1d))
+            l2 = np.reshape(l2.copy_to_host(),(2*x_size,-1),'C')
+        else:
+            l2 = [[0 for i in range(2 * x_size)] for j in range(2 * y_size)]
+            for i in range(2*y_size):
+                for j in range(2*x_size):
+                    corr_x = math.floor(j/2)
+                    corr_y = math.floor(i/2)
                     count = 0
                     for k in directions:
                         try:
@@ -109,19 +124,21 @@ while DOTHING:
                         except IndexError:
                             pass
                     if count >= 7: l2[i][j] = 1
-                    
         x_size = 2 * x_size
         y_size = 2 * y_size
         arr = l2
         
-        print(f"saving to imgs3/img{counter}.png")
-        im2 = Image.new("RGBA",(x_size,y_size))
-        for j in range(len(l2)):
-            for i in range(len(l2[j])):
-                if l2[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
-                else: im2.putpixel((i,j),(255,255,255,0))
-        im2.save(f"imgs3/img{counter}.png")
-        counter += 1
+        if "--benchmark" in args: print(f"operation finished in {time.perf_counter() - time_start} seconds")
+        if "--intermediate" in args:
+            if "--logs" in args: print(f"saving to imgs3/img{counter}.png")
+            im2 = Image.new("RGBA",(x_size,y_size))
+            for j in range(len(l2)):
+                for i in range(len(l2[j])):
+                    if l2[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
+                    else: im2.putpixel((i,j),(255,255,255,0))
+            im2.save(f"imgs3/img{counter}.png")
+            if "--logs" in args: print(f"saved to imgs3/img{counter}.png with dimensions {len(l2)} by {len(l2[0])}")
+            counter += 1
 
     im2 = Image.new("RGBA",(x_size,y_size))
     for j in range(len(l2)):
