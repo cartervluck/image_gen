@@ -4,9 +4,14 @@ import time
 import math
 from PIL import Image
 
-while True:
-    x_size = 100
-    y_size = 100
+DOTHING = True
+
+directions = [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1)]
+directions += [(0,2),(1,2),(2,2),(2,1),(2,0),(2,-1),(2,-2),(1,-2),(0,-2),(-1,-2),(-2,-2),(-2,-1),(-2,0),(-2,1),(-2,2),(-1,2)]
+
+while DOTHING:
+    x_size = int(input("X Dimension (default 100): "))
+    y_size = int(input("Y Dimension (default 100): "))
 
     def checkzeros(a):
         for j in a:
@@ -24,7 +29,7 @@ while True:
 
     arr = [[0 for i in range(x_size)] for j in range(y_size)] #index by y coord then x coord
 
-    border = 20
+    border = min(x_size,y_size)/5
 
     x_rand1 = random.randint(border,x_size-border)
     y_rand1 = random.randint(border,y_size-border) # get random x,y coordinate to seed at
@@ -67,7 +72,7 @@ while True:
                     arr[lookat[1]][lookat[0]] = 1
                 else:
                     arr[lookat[1]][lookat[0]] = 2
-            except: pass
+            except IndexError: pass
         if arr[lookat[1] + vectors[(currentdir + 1) % 4][1]][lookat[0] + vectors[(currentdir + 1) % 4][0]] == 0 or (currentdir == 0 and lookat[1] == y_size-1) or (currentdir == 1 and lookat[0] == x_size-1) or (currentdir == 2 and lookat[1] == 0) or (currentdir == 3 and lookat[0] == 0):
             currentdir += 1
             currentdir = currentdir % 4
@@ -77,7 +82,7 @@ while True:
         #printmap(arr,lookat)
         #time.sleep(0.001)
 
-    printmap(arr,(0,0))
+    #printmap(arr,(0,0))
     '''im = Image.new("RGBA",(x_size,y_size))
     for j in range(len(arr)):
         for i in range(len(arr[j])):
@@ -85,7 +90,8 @@ while True:
             else: im.putpixel((i,j),(255,255,255,255))
     im.save("poggers.png")'''
 
-    for FILLER in range(5):
+    counter = 1
+    while len(arr) <= 2**11:
         l2 = [[0 for i in range(2 * x_size)] for j in range(2 * y_size)]
 
         for i in range(2*y_size):
@@ -96,24 +102,32 @@ while True:
                     l2[i][j] = 1
                 else:
                     count = 0
-                    directions = [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1)]
-                    directions += [(0,2),(1,2),(2,2),(2,1),(2,0),(2,-1),(2,-2),(1,-2),(0,-2),(-1,-2),(-2,-2),(-2,-1),(-2,0),(-2,1),(-2,2),(-1,2)]
                     for k in directions:
                         try:
                             if arr[math.floor((i + k[1])/2)][math.floor((j + k[0])/2)] == 1:
                                 count += 1
-                        except:
+                        except IndexError:
                             pass
                     if count >= 7: l2[i][j] = 1
                     
         x_size = 2 * x_size
         y_size = 2 * y_size
         arr = l2
+        
+        print(f"saving to imgs3/img{counter}.png")
+        im2 = Image.new("RGBA",(x_size,y_size))
+        for j in range(len(l2)):
+            for i in range(len(l2[j])):
+                if l2[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
+                else: im2.putpixel((i,j),(255,255,255,0))
+        im2.save(f"imgs3/img{counter}.png")
+        counter += 1
 
     im2 = Image.new("RGBA",(x_size,y_size))
     for j in range(len(l2)):
         for i in range(len(l2[j])):
             if l2[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
             else: im2.putpixel((i,j),(255,255,255,0))
-    im2.save("imgs2/" + "".join([random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") for z in range(10)]) + ".png")
+    im2.save("imgs3/" + "".join([random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") for z in range(10)]) + ".png")
+    DOTHING = False
 
