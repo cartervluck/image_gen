@@ -92,12 +92,13 @@ while DOTHING:
             currentdir += 1
             currentdir = currentdir % 4
         lookat = (min(max(0,lookat[0] + vectors[currentdir][0]), x_size-1), min(max(0,lookat[1] + vectors[currentdir][1]),y_size-1))
-    im2 = Image.new("RGBA",(x_size,y_size))
-    for j in range(len(arr)):
-        for i in range(len(arr[j])):
-            if arr[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
-            else: im2.putpixel((i,j),(255,255,255,0))
-    im2.save(f"imgs3/img0.png")
+    if "--intermediate" in args:
+        im2 = Image.new("RGBA",(x_size,y_size))
+        for j in range(len(arr)):
+            for i in range(len(arr[j])):
+                if arr[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
+                else: im2.putpixel((i,j),(255,255,255,0))
+        im2.save(f"imgs3/img0.png")
 
     counter = 1
     while len(arr) <= 2**11:
@@ -128,15 +129,16 @@ while DOTHING:
         arr = l2
         
         if "--benchmark" in args: print(f"operation finished in {time.perf_counter() - time_start} seconds")
-        if "--logs" in args: print(f"saving to imgs3/img{counter}.png")
-        im2 = Image.new("RGBA",(x_size,y_size))
-        for j in range(len(l2)):
-            for i in range(len(l2[j])):
-                if l2[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
-                else: im2.putpixel((i,j),(255,255,255,0))
-        im2.save(f"imgs3/img{counter}.png")
-        if "--logs" in args: print(f"saved to imgs3/img{counter}.png with dimensions {len(l2)} by {len(l2[0])}")
-        counter += 1
+        if "--intermediate" in args:
+            if "--logs" in args: print(f"saving to imgs3/img{counter}.png")
+            im2 = Image.new("RGBA",(x_size,y_size))
+            for j in range(len(l2)):
+                for i in range(len(l2[j])):
+                    if l2[j][i] == 1: im2.putpixel((i,j),(0,0,0,255))
+                    else: im2.putpixel((i,j),(255,255,255,0))
+            im2.save(f"imgs3/img{counter}.png")
+            if "--logs" in args: print(f"saved to imgs3/img{counter}.png with dimensions {len(l2)} by {len(l2[0])}")
+            counter += 1
 
     im2 = Image.new("RGBA",(x_size,y_size))
     for j in range(len(l2)):
