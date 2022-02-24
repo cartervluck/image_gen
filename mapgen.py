@@ -3,6 +3,12 @@ import random
 import time
 import math
 from PIL import Image
+import sys
+
+args = []
+
+for i, arg in enumerate(sys.argv):
+  args.append(arg)
 
 DOTHING = True
 
@@ -72,19 +78,32 @@ while DOTHING:
     while len(arr) <= 2**11:
         l2 = [[0 for i in range(2 * x_size)] for j in range(2 * y_size)]
 
-        for i in range(2*y_size):
-            for j in range(2*x_size):
-                corr_x = math.floor(j/2)
-                corr_y = math.floor(i/2)
-                count = 0
-                for k in directions:
-                    try:
-                        if arr[math.floor((i + k[1])/2)][math.floor((j + k[0])/2)] == 1:
-                            count += 1
-                    except IndexError:
-                        pass
-                if count >= 7: l2[i][j] = 1
-                    
+        if "--parallel" in args:
+            for i in range(2*y_size):
+                for j in range(2*x_size):
+                    corr_x = math.floor(j/2)
+                    corr_y = math.floor(i/2)
+                    count = 0
+                    for k in directions:
+                        try:
+                            if arr[math.floor((i + k[1])/2)][math.floor((j + k[0])/2)] == 1:
+                                count += 1
+                        except IndexError:
+                            pass
+                    if count >= 7: l2[i][j] = 1
+        else:
+            for i in range(2*y_size):
+                for j in range(2*x_size):
+                    corr_x = math.floor(j/2)
+                    corr_y = math.floor(i/2)
+                    count = 0
+                    for k in directions:
+                        try:
+                            if arr[math.floor((i + k[1])/2)][math.floor((j + k[0])/2)] == 1:
+                                count += 1
+                        except IndexError:
+                            pass
+                    if count >= 7: l2[i][j] = 1
         x_size = 2 * x_size
         y_size = 2 * y_size
         arr = l2
