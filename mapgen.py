@@ -8,7 +8,22 @@ import sys
 args = []
 
 for i, arg in enumerate(sys.argv):
-  args.append(arg)
+    args.append(arg)
+try:
+    from numba import jit
+    @jit
+    def interpolatePixel(i,j,d,arr):
+        corr_x = math.floor(j/2)
+        corr_y = math.floor(i/2)
+        count = 0
+        for k in d:
+            if len(arr) > math.floor((i + k[1])/2) and len(arr[math.floor((i + k[1])/2)]) > math.floor((j + k[0])/2):
+                if arr[math.floor((i + k[1])/2)][math.floor((j + k[0])/2)] == 1:
+                    count += 1
+        if count >= 7: return 1
+        else: return 2
+except ModuleNotFoundError:
+    pass
 
 DOTHING = True
 
@@ -76,21 +91,13 @@ while DOTHING:
 
     counter = 1
     while len(arr) <= 2**11:
+        time_start = time.perf_counter()
         l2 = [[0 for i in range(2 * x_size)] for j in range(2 * y_size)]
 
         if "--parallel" in args:
             for i in range(2*y_size):
                 for j in range(2*x_size):
-                    corr_x = math.floor(j/2)
-                    corr_y = math.floor(i/2)
-                    count = 0
-                    for k in directions:
-                        try:
-                            if arr[math.floor((i + k[1])/2)][math.floor((j + k[0])/2)] == 1:
-                                count += 1
-                        except IndexError:
-                            pass
-                    if count >= 7: l2[i][j] = 1
+                    l2[i][j] = interpolatePixel(i,j,directions,arr)
         else:
             for i in range(2*y_size):
                 for j in range(2*x_size):
@@ -108,6 +115,8 @@ while DOTHING:
         y_size = 2 * y_size
         arr = l2
         
+        if "--benchmark" in args:
+            print(f"operation finished in {time.perf_counter() - time_start} seconds")
         print(f"saving to imgs3/img{counter}.png")
         im2 = Image.new("RGBA",(x_size,y_size))
         for j in range(len(l2)):
